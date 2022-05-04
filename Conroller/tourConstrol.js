@@ -2,12 +2,31 @@ const Tour = require('../model/tourModel');
 
 const rewiewgetAll = async (req, res) => {
   try {
-    const data = await Tour.find();
-    res.status(200).json({
-      status: 'succes',
-      results: data.length,
-      data: data,
-    });
+    const query = { ...req.query };
+    const removeQuery = ['sort', 'page', 'limit', 'field'];
+    removeQuery.forEach((val) => delete query[val]);
+    const queryStr = JSON.stringify(query)
+      .replace(/\bgt\b/g, '$gt')
+      .replace(/\blt\b/g, '$lt')
+      .replace(/\bgte\b/g, '$gte')
+      .replace(/\blte\b/g, '$lte');
+    let data = Tour.find(JSON.parse(queryStr));
+    if (req.query.sort) {
+      const querySort = req.query.sort.split(',').join(' ');
+      data = data.sort(querySort);
+    }
+
+    const queryData = await data;
+
+    if (queryData.length) {
+      res.status(200).json({
+        status: 'succes',
+        results: queryData.length,
+        data: queryData,
+      });
+    } else {
+      throw new Error('Error');
+    }
   } catch {
     res.status(200).json({
       status: 'fail',
