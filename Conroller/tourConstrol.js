@@ -2,50 +2,61 @@ const Tour = require('../model/tourModel');
 
 const rewiewgetAll = async (req, res) => {
   try {
-    const query = { ...req.query };
-    const removeQuery = ['sort', 'page', 'limit', 'field'];
-    removeQuery.forEach((val) => delete query[val]);
+    class APIFeatures {
+      constructor(surov, surovUrl) {
+        this.surov = surov;
+        this.surovUrl = surovUrl;
+      }
+      filter() {
+        /* 1 - FILTER */
+        const query = { ...this.surovUrl };
+        const removeQuery = ['sort', 'page', 'limit', 'field'];
+        removeQuery.forEach((val) => delete query[val]);
 
-    /* 1 - FILTER */
-
-    const queryStr = JSON.stringify(query)
-      .replace(/\bgt\b/g, '$gt')
-      .replace(/\blt\b/g, '$lt')
-      .replace(/\bgte\b/g, '$gte')
-      .replace(/\blte\b/g, '$lte');
-    let data = Tour.find(JSON.parse(queryStr));
-
-    /* 2- SORT */
-
-    if (req.query.sort) {
-      const querySort = req.query.sort.split(',').join(' ');
-      data = data.sort(querySort);
-    }
-
-    /* 3 - FIELD */
-
-    if (req.query.field) {
-      const queryField = req.query.field.split(',').join(' ');
-      data = data.select(queryField);
-    } else {
-      data = data.select('-__v');
-    }
-
-    /* 4 - PAGE */
-    const page = req.query.page * 1 || 1;
-    const limit = req.query.limit * 1 || 3;
-    const skip = (page - 1) * limit;
-
-    data = data.skip(skip).limit(limit);
-
-    if (req.query.page) {
-      const numberOfDocuments = await Tour.countDocuments();
-      if (numberOfDocuments < skip) {
-        throw new Error('This page does not exsist');
+        const queryStr = JSON.stringify(query)
+          .replace(/\bgt\b/g, '$gt')
+          .replace(/\blt\b/g, '$lt')
+          .replace(/\bgte\b/g, '$gte')
+          .replace(/\blte\b/g, '$lte');
+        this.surov.find(JSON.parse(queryStr));
+        return this;
+      }
+      sort() {
+        /* 2- SORT */
+        if (this.surovUrl.sort) {
+          const querySort = this.surovUrl.sort.split(',').join(' ');
+          this.surov = this.surov.sort(querySort);
+          return this;
+        }
       }
     }
 
-    const queryData = await data;
+    let data = new APIFeatures(Tour, req.query).filter().sort();
+
+    /* 3 - FIELD */
+
+    // if (req.query.field) {
+    //   const queryField = req.query.field.split(',').join(' ');
+    //   data = data.select(queryField);
+    // } else {
+    //   data = data.select('-__v');
+    // }
+
+    /* 4 - PAGE */
+    // const page = req.query.page * 1 || 1;
+    // const limit = req.query.limit * 1 || 3;
+    // const skip = (page - 1) * limit;
+
+    // data = data.skip(skip).limit(limit);
+
+    // if (req.query.page) {
+    //   const numberOfDocuments = await Tour.countDocuments();
+    //   if (numberOfDocuments < skip) {
+    //     throw new Error('This page does not exsist');
+    //   }
+    // }
+
+    const queryData = await data.surov;
 
     if (queryData.length) {
       res.status(200).json({
@@ -70,7 +81,7 @@ const postTour = async (req, res) => {
       status: 'succes',
       data: data,
     });
-  } catch (err) {
+  } catch (e) {
     res.status(404).json({
       status: 'fail',
       message: 'invalid data',
