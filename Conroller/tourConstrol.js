@@ -18,7 +18,7 @@ const rewiewgetAll = async (req, res) => {
           .replace(/\blt\b/g, '$lt')
           .replace(/\bgte\b/g, '$gte')
           .replace(/\blte\b/g, '$lte');
-        this.surov.find(JSON.parse(queryStr));
+        this.surov = this.surov.find(JSON.parse(queryStr));
         return this;
       }
       sort() {
@@ -28,36 +28,39 @@ const rewiewgetAll = async (req, res) => {
           this.surov = this.surov.sort(querySort);
           return this;
         }
+        return this;
+      }
+      field() {
+        /* 3 - FIELD */
+
+        if (this.surovUrl.field) {
+          const queryField = this.surovUrl.field.split(',').join(' ');
+          this.surov = this.surov.select(queryField);
+        } else {
+          this.surov = this.surov.select('-__v');
+        }
+        return this;
+      }
+      page() {
+        /* 4 - PAGE */
+        const page = this.surovUrl.page * 1 || 1;
+        const limit = this.surovUrl.limit * 1 || 3;
+        const skip = (page - 1) * limit;
+        this.surov = this.surov.skip(skip).limit(limit);
+
+        return this;
       }
     }
 
-    let data = new APIFeatures(Tour, req.query).filter().sort();
-
-    /* 3 - FIELD */
-
-    // if (req.query.field) {
-    //   const queryField = req.query.field.split(',').join(' ');
-    //   data = data.select(queryField);
-    // } else {
-    //   data = data.select('-__v');
-    // }
-
-    /* 4 - PAGE */
-    // const page = req.query.page * 1 || 1;
-    // const limit = req.query.limit * 1 || 3;
-    // const skip = (page - 1) * limit;
-
-    // data = data.skip(skip).limit(limit);
-
-    // if (req.query.page) {
-    //   const numberOfDocuments = await Tour.countDocuments();
-    //   if (numberOfDocuments < skip) {
-    //     throw new Error('This page does not exsist');
-    //   }
-    // }
+    let data = new APIFeatures(Tour, req.query).filter().sort().field();
 
     const queryData = await data.surov;
-
+    if (this.surovUrl.page) {
+      const numberOfDocuments = await this.surov.countDocuments();
+      if (numberOfDocuments < skip) {
+        throw new Error('This page does not exsist');
+      }
+    }
     if (queryData.length) {
       res.status(200).json({
         status: 'succes',
