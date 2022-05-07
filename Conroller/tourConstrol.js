@@ -92,8 +92,9 @@ const stats = async (req, res) => {
   try {
     const data = await Tour.aggregate([
       {
-        $match: { duration: { $gt: 7, $lt: 9 } },
+        $match: { duration: { $gt: 3, $lt: 9 } },
       },
+      { $group: { "_id": 4.7,"maxPrice":  , "averagePrice": { $avg: '$price' } } },
     ]);
     res.status(200).json({
       status: 'SUCCESS',
